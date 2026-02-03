@@ -1,41 +1,29 @@
-const seatRows = [
-  { row: "A", premium: false },
-  { row: "B", premium: false },
-  { row: "C", premium: true },
-  { row: "D", premium: true },
-  { row: "E", premium: true },
-  { row: "F", premium: false },
-  { row: "G", premium: false },
-  { row: "H", premium: false },
-];
+const defaultConfig = {
+  rows: ["A", "B", "C", "D", "E", "F", "G", "H"],
+  seatsPerRow: 12,
+  premiumRows: ["C", "D", "E"],
+  maxSelection: 6,
+  occupiedSeats: [],
+  aisleAfter: [4, 8],
+};
 
-const basePrice = 18;
-const premiumPrice = 24;
-const seatsPerRow = 12;
-const aisleAfter = [4, 8];
-const maxSelection = 6;
-const occupiedSeats = new Set([
-  "A3",
-  "A4",
-  "B6",
-  "C2",
-  "C9",
-  "D5",
-  "E7",
-  "F1",
-  "G10",
-  "H8",
-]);
+let config = { ...defaultConfig };
 const seatingContainer = document.getElementById("seating");
 const selectedSeatsLabel = document.getElementById("selected-seats");
 const selectedCountLabel = document.getElementById("selected-count");
-const totalLabel = document.getElementById("total");
 const reserveButton = document.getElementById("reserve");
 const availableCountLabel = document.getElementById("available-count");
 const clearSelectionButton = document.getElementById("clear-selection");
 const statusMessage = document.getElementById("status-message");
+const configForm = document.getElementById("config-form");
+const rowsInput = document.getElementById("rows-input");
+const seatsInput = document.getElementById("seats-input");
+const premiumInput = document.getElementById("premium-input");
+const maxInput = document.getElementById("max-input");
+const occupiedInput = document.getElementById("occupied-input");
 
 const selectedSeats = new Map();
+let occupiedSeats = new Set();
 
 const createSeatButton = (seatId, isPremium, isOccupied) => {
   const button = document.createElement("button");
@@ -43,10 +31,9 @@ const createSeatButton = (seatId, isPremium, isOccupied) => {
   button.type = "button";
   button.textContent = seatId.slice(1);
   button.dataset.seat = seatId;
-  const price = isPremium ? premiumPrice : basePrice;
   button.setAttribute(
     "aria-label",
-    `Asiento ${seatId} ${isPremium ? "premium" : "estándar"}: $${price.toFixed(2)}`
+    `Asiento ${seatId} ${isPremium ? "premium" : "estándar"}`
   );
 
   if (isPremium) {
@@ -64,7 +51,9 @@ const createSeatButton = (seatId, isPremium, isOccupied) => {
 };
 
 const renderSeating = () => {
-  seatRows.forEach(({ row, premium }) => {
+  seatingContainer.innerHTML = "";
+  config.rows.forEach((row) => {
+    const premium = config.premiumRows.includes(row);
     const rowWrapper = document.createElement("div");
     rowWrapper.className = "row";
 
@@ -78,12 +67,12 @@ const renderSeating = () => {
 
     rowWrapper.appendChild(leftLabel);
 
-    for (let seatNumber = 1; seatNumber <= seatsPerRow; seatNumber += 1) {
+    for (let seatNumber = 1; seatNumber <= config.seatsPerRow; seatNumber += 1) {
       const seatId = `${row}${seatNumber}`;
       const button = createSeatButton(seatId, premium, occupiedSeats.has(seatId));
       rowWrapper.appendChild(button);
 
-      if (aisleAfter.includes(seatNumber)) {
+      if (config.aisleAfter.includes(seatNumber)) {
         const spacer = document.createElement("span");
         spacer.className = "seat-spacer";
         rowWrapper.appendChild(spacer);
@@ -105,11 +94,11 @@ const toggleSeat = (button, isPremium) => {
     button.classList.remove("selected");
     statusMessage.textContent = "";
   } else {
-    if (selectedSeats.size >= maxSelection) {
-      statusMessage.textContent = `Solo puedes seleccionar hasta ${maxSelection} asientos.`;
+    if (selectedSeats.size >= config.maxSelection) {
+      statusMessage.textContent = `Solo puedes seleccionar hasta ${config.maxSelection} asientos.`;
       return;
     }
-    selectedSeats.set(seatId, isPremium ? premiumPrice : basePrice);
+    selectedSeats.set(seatId, isPremium ? "premium" : "estándar");
     button.classList.add("selected");
     statusMessage.textContent = "";
   }
@@ -120,14 +109,12 @@ const toggleSeat = (button, isPremium) => {
 const updateSummary = () => {
   const selectedSeatList = Array.from(selectedSeats.keys()).sort();
   const count = selectedSeatList.length;
-  const total = Array.from(selectedSeats.values()).reduce((sum, price) => sum + price, 0);
 
   selectedSeatsLabel.textContent = count ? selectedSeatList.join(", ") : "Ninguno";
   selectedCountLabel.textContent = count.toString();
-  totalLabel.textContent = `$${total.toFixed(2)}`;
   reserveButton.disabled = count === 0;
 
-  const totalAvailable = seatRows.length * seatsPerRow - occupiedSeats.size;
+  const totalAvailable = config.rows.length * config.seatsPerRow - occupiedSeats.size;
   availableCountLabel.textContent = (totalAvailable - count).toString();
 };
 
@@ -143,6 +130,37 @@ const clearSelection = () => {
   updateSummary();
 };
 
-clearSelectionButton.addEventListener("click", clearSelection);
+const parseCsv = (value) =>
+  value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
 
+const applyConfig = (event) => {
+  event.preventDefault();
+  const rows = parseCsv(rowsInput.value.toUpperCase());
+  const premiumRows = parseCsv(premiumInput.value.toUpperCase());
+  const occupied = parseCsv(occupiedInput.value.toUpperCase());
+  const seatsPerRow = Number(seatsInput.value);
+  const maxSelection = Number(maxInput.value);
+
+  config = {
+    ...config,
+    rows: rows.length ? rows : defaultConfig.rows,
+    premiumRows,
+    seatsPerRow: Number.isNaN(seatsPerRow) ? defaultConfig.seatsPerRow : seatsPerRow,
+    maxSelection: Number.isNaN(maxSelection) ? defaultConfig.maxSelection : maxSelection,
+    occupiedSeats: occupied,
+  };
+
+  occupiedSeats = new Set(config.occupiedSeats);
+  clearSelection();
+  renderSeating();
+  statusMessage.textContent = "Configuración actualizada.";
+};
+
+clearSelectionButton.addEventListener("click", clearSelection);
+configForm.addEventListener("submit", applyConfig);
+
+occupiedSeats = new Set(config.occupiedSeats);
 renderSeating();

@@ -27,10 +27,6 @@
             <span class="value">Sábado 20:00</span>
           </div>
           <div>
-            <span class="label">Precio base</span>
-            <span class="value">$18.00</span>
-          </div>
-          <div>
             <span class="label">Disponibles</span>
             <span class="value" id="available-count">0</span>
           </div>
@@ -67,11 +63,33 @@
             <span class="label">Cantidad</span>
             <span class="value" id="selected-count">0</span>
           </div>
-          <div class="summary-row">
-            <span class="label">Total</span>
-            <span class="value" id="total">$0.00</span>
-          </div>
           <button class="cta" id="reserve" disabled>Confirmar reserva</button>
+        </div>
+        <div class="config">
+          <h3>Editar selector</h3>
+          <form id="config-form">
+            <label>
+              Filas (separadas por coma)
+              <input type="text" id="rows-input" value="A,B,C,D,E,F,G,H" />
+            </label>
+            <label>
+              Asientos por fila
+              <input type="number" id="seats-input" min="1" max="20" value="12" />
+            </label>
+            <label>
+              Filas premium (ej: C,D,E)
+              <input type="text" id="premium-input" value="C,D,E" />
+            </label>
+            <label>
+              Máximo por compra
+              <input type="number" id="max-input" min="1" max="20" value="6" />
+            </label>
+            <label>
+              Asientos ocupados (ej: A1,B3)
+              <input type="text" id="occupied-input" value="" />
+            </label>
+            <button class="ghost" type="submit">Aplicar cambios</button>
+          </form>
         </div>
         <div class="tips">
           <h3>Consejos rápidos</h3>
