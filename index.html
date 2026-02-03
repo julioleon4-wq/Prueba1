@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Selector de asientos - Teatro Aurora</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Teatro Aurora</p>
+          <h1>Selecciona tus asientos en línea</h1>
+          <p class="subtitle">
+            Visualiza la sala, elige tus butacas favoritas y confirma tu reserva en
+            segundos.
+          </p>
+          <div class="meta">
+            <span>Sábado 12 de julio · 20:00 h</span>
+            <span>Entrada digital inmediata</span>
+          </div>
+        </div>
+        <div class="show-info">
+          <div>
+            <span class="label">Función</span>
+            <span class="value">Sábado 20:00</span>
+          </div>
+          <div>
+            <span class="label">Precio base</span>
+            <span class="value">$18.00</span>
+          </div>
+          <div>
+            <span class="label">Disponibles</span>
+            <span class="value" id="available-count">0</span>
+          </div>
+        </div>
+      </header>
+
+      <section class="seat-selector">
+        <div class="screen">Escenario</div>
+        <div class="legend">
+          <span><span class="seat available"></span> Disponible</span>
+          <span><span class="seat selected"></span> Seleccionado</span>
+          <span><span class="seat occupied"></span> Ocupado</span>
+          <span><span class="seat premium"></span> Premium</span>
+        </div>
+        <p class="hint" id="selection-hint">
+          Puedes seleccionar hasta 6 asientos por compra. Las filas C a E son
+          premium.
+        </p>
+        <div class="seating" id="seating"></div>
+        <div class="actions">
+          <button class="ghost" id="clear-selection" type="button">Limpiar selección</button>
+          <span class="status" id="status-message" aria-live="polite"></span>
+        </div>
+      </section>
+
+      <aside class="summary">
+        <h2>Resumen de compra</h2>
+        <div class="summary-card">
+          <div class="summary-row">
+            <span class="label">Asientos elegidos</span>
+            <span class="value" id="selected-seats">Ninguno</span>
+          </div>
+          <div class="summary-row">
+            <span class="label">Cantidad</span>
+            <span class="value" id="selected-count">0</span>
+          </div>
+          <div class="summary-row">
+            <span class="label">Total</span>
+            <span class="value" id="total">$0.00</span>
+          </div>
+          <button class="cta" id="reserve" disabled>Confirmar reserva</button>
+        </div>
+        <div class="tips">
+          <h3>Consejos rápidos</h3>
+          <ul>
+            <li>Haz clic en las butacas para seleccionarlas o liberar.</li>
+            <li>Las zonas premium están en las filas centrales.</li>
+            <li>El total se actualiza en tiempo real.</li>
+          </ul>
+        </div>
+      </aside>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
