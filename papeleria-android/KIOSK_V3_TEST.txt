@@ -1,0 +1,12 @@
+KIOSK v3 - PRUEBA REAL
+
+1. Instala el APK en la tablet.
+2. Conecta tablet y celular a la MISMA red Wi-Fi.
+3. En la tablet toca: Enviar desde mi celular.
+4. Escanea el QR con el celular.
+5. Elige un PDF de hasta 25 MB y toca ENVIAR PDF.
+6. La tablet debe cambiar automáticamente a Trabajo recibido, mostrando nombre y páginas.
+7. Elige B/N o Color y copias.
+8. Toca Pago DEMO + imprimir para abrir el sistema de impresión Android.
+
+Si el QR abre pero no carga la página, probablemente la red Wi-Fi tiene aislamiento entre clientes. Para una red escolar con aislamiento se añadirá modo hotspot directo en una siguiente iteración.
