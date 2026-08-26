@@ -39,7 +39,7 @@ public class LocalUploadServer {
             while (running) {
                 try {
                     Socket socket = serverSocket.accept();
-                    socket.setSoTimeout(20000);
+                    socket.setSoTimeout(30000);
                     pool.execute(() -> handle(socket));
                 } catch (IOException e) {
                     if (running) e.printStackTrace();
@@ -81,16 +81,16 @@ public class LocalUploadServer {
             }
 
             String expected = "/upload/" + token;
-            if (!path.equals(expected)) { sendText(out, 404, "Esta sesión ya no está disponible. Genera un nuevo QR en el kiosco."); return; }
-
+            if (!path.equals(expected)) { sendText(out, 404, "Este QR ya venció o ya se usó. Genera uno nuevo en el kiosco."); return; }
             if ("GET".equals(method)) { sendHtml(out, uploadPage()); return; }
             if (!"POST".equals(method)) { sendText(out, 405, "Método no permitido"); return; }
 
             String ct = headers.getOrDefault("content-type", "").toLowerCase(Locale.ROOT);
-            if (!ct.startsWith("application/pdf")) { sendJson(out, 415, "{\"ok\":false,\"error\":\"Solo se aceptan archivos PDF\"}"); return; }
+            if (!ct.startsWith("application/pdf")) { sendJson(out, 415, "{\"ok\":false,\"error\":\"Ese archivo no es PDF. Elige un PDF y vuelve a intentar.\"}"); return; }
             long length;
             try { length = Long.parseLong(headers.getOrDefault("content-length", "-1")); } catch (Exception e) { length = -1; }
-            if (length <= 0 || length > MAX_BYTES) { sendJson(out, 413, "{\"ok\":false,\"error\":\"El PDF está vacío o supera 25 MB\"}"); return; }
+            if (length <= 0) { sendJson(out, 400, "{\"ok\":false,\"error\":\"El archivo está vacío.\"}"); return; }
+            if (length > MAX_BYTES) { sendJson(out, 413, "{\"ok\":false,\"error\":\"Tu PDF pesa más de 25 MB.\"}"); return; }
 
             String encoded = headers.getOrDefault("x-file-name", "documento.pdf");
             String original;
@@ -114,7 +114,7 @@ public class LocalUploadServer {
             try (InputStream fin = new FileInputStream(target)) { if (fin.read(magic) != 5) throw new IOException("PDF inválido"); }
             if (!"%PDF-".equals(new String(magic, StandardCharsets.US_ASCII))) {
                 target.delete();
-                sendJson(out, 400, "{\"ok\":false,\"error\":\"El archivo no es un PDF válido\"}");
+                sendJson(out, 400, "{\"ok\":false,\"error\":\"El archivo no parece ser un PDF válido.\"}");
                 return;
             }
 
@@ -165,7 +165,14 @@ public class LocalUploadServer {
     }
 
     private static String uploadPage() {
-        return "<!doctype html><html lang='es'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1,viewport-fit=cover'><meta name='theme-color' content='#121212'><title>Enviar documento</title><style>"+
-        "*{box-sizing:border-box}body{margin:0;background:#f3f2ed;color:#121212;font-family:Arial,Helvetica,sans-serif;padding:24px}main{max-width:560px;margin:5vh auto;background:#fff;border:1px solid #d8d7d2;padding:28px}header{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #121212;padding-bottom:18px;margin-bottom:26px}.mark{font-weight:900;letter-spacing:.06em}.step{font-size:12px;color:#666}h1{font-size:30px;line-height:1.05;margin:0 0 10px}.lead{color:#5b5b57;line-height:1.45}.picker{margin:28px 0;border:2px dashed #a9a8a3;background:#faf9f6;padding:24px}.picker label{display:block;font-weight:800;margin-bottom:12px}input{width:100%}.meta{font-size:12px;color:#72716d;margin-top:10px}.send{width:100%;border:0;background:#1155cc;color:white;padding:16px;font-size:16px;font-weight:800;letter-spacing:.02em}.send:disabled{opacity:.45}.msg{margin-top:18px;padding:14px;border-left:4px solid #b6b4ae;background:#f7f6f2;line-height:1.4}.ok{border-color:#1f7a4c}.bad{border-color:#b12b2b;color:#8d1e1e}.foot{margin-top:24px;font-size:11px;color:#777}</style></head><body><main><header><div class='mark'>PAPELERÍA / AUTOSERVICIO</div><div class='step'>ENVÍO DE ARCHIVO</div></header><h1>Envía tu PDF al kiosco</h1><p class='lead'>El archivo irá únicamente a la tablet que tienes enfrente. Al terminar la sesión se elimina del kiosco.</p><div class='picker'><label for='f'>Seleccionar documento</label><input id='f' type='file' accept='application/pdf,.pdf'><div class='meta'>PDF · máximo 25 MB</div></div><button class='send' id='b' onclick='send()'>ENVIAR AL KIOSCO</button><div id='m' class='msg'>Esperando archivo.</div><div class='foot'>No cierres esta página hasta ver la confirmación.</div></main><script>async function send(){const f=document.getElementById('f').files[0],m=document.getElementById('m'),b=document.getElementById('b');if(!f){m.className='msg bad';m.textContent='Selecciona un PDF.';return}if(f.size>25*1024*1024){m.className='msg bad';m.textContent='El archivo supera 25 MB.';return}b.disabled=true;m.className='msg';m.textContent='Enviando documento…';try{const r=await fetch(location.pathname,{method:'POST',headers:{'Content-Type':'application/pdf','X-File-Name':encodeURIComponent(f.name)},body:f});const x=await r.json();if(!r.ok)throw new Error(x.error||'No se pudo enviar');m.className='msg ok';m.innerHTML='<b>Documento recibido.</b><br>Continúa en la pantalla del kiosco.';b.style.display='none';document.getElementById('f').disabled=true}catch(e){m.className='msg bad';m.textContent=e.message;b.disabled=false}}</script></body></html>";
+        return """
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0f4fd1"><title>Subir PDF</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#f2efe8;color:#171717;font-family:Arial,Helvetica,sans-serif;padding:20px}main{max-width:560px;margin:4vh auto;background:#fff;border:1px solid #ddd5c8;border-radius:24px;padding:24px;box-shadow:0 22px 55px #00000014;overflow:hidden;position:relative}main:after{content:'C';position:absolute;right:-20px;bottom:-70px;font-size:240px;font-weight:900;color:#111;opacity:.025;pointer-events:none}.top{font-size:10px;font-weight:900;letter-spacing:.13em;text-transform:uppercase;color:#0f4fd1}.status{display:inline-block;margin-top:8px;border:1px solid #d5d0c8;border-radius:99px;padding:7px 9px;font-size:9px;font-weight:900;text-transform:uppercase}h1{font-size:34px;line-height:1.02;letter-spacing:-.035em;margin:20px 0 9px}.lead{color:#5d5953;line-height:1.5;font-size:14px}.picker{margin:24px 0 14px;border:1px dashed #aaa39a;border-radius:16px;background:#faf8f3;padding:20px}.picker label{display:block;font-weight:900;margin-bottom:12px}.meta{font-size:11px;color:#77716a;margin-top:10px}.send{width:100%;border:0;border-radius:13px;background:#0f4fd1;color:#fff;padding:16px;font-size:15px;font-weight:900}.send:disabled{opacity:.5}.msg{margin-top:14px;padding:12px;border-left:4px solid #b6b4ae;background:#f7f6f2;line-height:1.4;font-size:12px}.ok{border-color:#1f7a4c}.bad{border-color:#b12b2b;color:#8d1e1e}.progress{height:8px;border-radius:99px;background:#e7e2d9;overflow:hidden;margin-top:14px;display:none}.progress i{display:block;height:100%;width:0;background:#0f4fd1;transition:width .08s}.pct{text-align:right;font-size:10px;color:#666;margin-top:5px}.foot{margin-top:18px;font-size:10px;color:#777;line-height:1.45}</style></head>
+<body><main><div class="top">COBRA / PAPELERÍA</div><span class="status">Sesión privada</span><h1>Manda tu PDF en corto.</h1><p class="lead">Elige el archivo y súbelo. Cuando llegue, sigue en la tablet para revisar páginas, color y copias.</p><div class="picker"><label for="f">Tu documento</label><input id="f" type="file" accept="application/pdf,.pdf"><div class="meta">Solo PDF · máximo 25 MB</div></div><button class="send" id="b" onclick="sendFile()">MANDAR AL KIOSCO</button><div id="prog" class="progress"><i id="bar"></i></div><div id="pct" class="pct"></div><div id="m" class="msg">Listo para recibir tu archivo.</div><div class="foot">No cierres esta página hasta que diga que ya quedó. Si se corta la red, puedes volver a intentar mientras el QR siga activo.</div></main>
+<script>
+function fail(t){let m=document.getElementById('m');m.className='msg bad';m.textContent=t;document.getElementById('b').disabled=false}
+function sendFile(){const f=document.getElementById('f').files[0],m=document.getElementById('m'),b=document.getElementById('b'),p=document.getElementById('prog'),bar=document.getElementById('bar'),pct=document.getElementById('pct');if(!f){fail('Primero elige un PDF.');return}if(f.size>25*1024*1024){fail('Ese PDF pesa más de 25 MB.');return}if(!/pdf$/i.test(f.name)&&f.type!=='application/pdf'){fail('Ese archivo no parece PDF.');return}b.disabled=true;p.style.display='block';m.className='msg';m.textContent='Subiendo… no cierres esta página.';let x=new XMLHttpRequest();x.open('POST',location.pathname,true);x.setRequestHeader('Content-Type','application/pdf');x.setRequestHeader('X-File-Name',encodeURIComponent(f.name));x.upload.onprogress=e=>{if(e.lengthComputable){let n=Math.round(e.loaded*100/e.total);bar.style.width=n+'%';pct.textContent=n+'%'}};x.onload=()=>{let r={};try{r=JSON.parse(x.responseText||'{}')}catch{}if(x.status>=200&&x.status<300&&r.ok){bar.style.width='100%';pct.textContent='100%';m.className='msg ok';m.innerHTML='<b>Ya quedó.</b><br>Regresa a la tablet para revisar tu impresión.';b.style.display='none';document.getElementById('f').disabled=true}else fail(r.error||'No se pudo enviar. Intenta otra vez.')};x.onerror=()=>fail('Se cortó la conexión. Revisa la red e intenta otra vez.');x.ontimeout=()=>fail('La subida tardó demasiado. Intenta otra vez.');x.timeout=45000;x.send(f)}
+</script></body></html>
+""";
     }
 }
