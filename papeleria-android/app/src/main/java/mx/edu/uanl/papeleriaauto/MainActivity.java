@@ -3,6 +3,7 @@ package mx.edu.uanl.papeleriaauto;
 import android.app.*;
 import android.content.*;
 import android.graphics.*;
+import android.graphics.pdf.PdfDocument;
 import android.graphics.pdf.PdfRenderer;
 import android.net.Uri;
 import android.os.*;
@@ -102,6 +103,7 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface public void cancelCurrentJob() {
             runOnUiThread(() -> {
+                if (uploadServer != null) uploadServer.newSession();
                 clearCurrentJob();
                 web.evaluateJavascript("window.onJobCleared && window.onJobCleared()", null);
             });
@@ -170,7 +172,7 @@ public class MainActivity extends Activity {
 
             SubsetPdfAdapter adapter = new SubsetPdfAdapter(uri, name, pageIndexes, Math.max(1, copies), attrs, operationId);
             PrintJob job = pm.print((isReprint ? "Reimpresion " : "Papeleria ") + operationId, adapter, attrs);
-            monitorPrintJob(job, operationId, isReprint);
+            monitorPrintJob(job, operationId);
             web.evaluateJavascript("window.onPrintOpened && window.onPrintOpened('" + jsEscape(operationId) + "'," + Math.max(1,copies) + ")", null);
         } catch(Exception e) {
             Toast.makeText(this, "No se pudo abrir impresión: " + e.getMessage(), Toast.LENGTH_LONG).show();
@@ -229,7 +231,7 @@ public class MainActivity extends Activity {
         } catch(Exception ignored) { cleanupReprint(); }
     }
 
-    private void monitorPrintJob(PrintJob job, String operationId, boolean isReprint) {
+    private void monitorPrintJob(PrintJob job, String operationId) {
         final long started = System.currentTimeMillis();
         Runnable poll = new Runnable() {
             @Override public void run() {
