@@ -2,6 +2,8 @@ name: Build Papeleria APK
 on:
   push:
     branches: [papeleria-android-apk-build]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
