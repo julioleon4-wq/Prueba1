@@ -391,10 +391,10 @@ public class MainActivity extends Activity {
 
         @Override public void onWrite(PageRange[] ranges, ParcelFileDescriptor dest,
                                       CancellationSignal cs, WriteResultCallback cb) {
+            PrintedPdfDocument outDoc = null;
             try (ParcelFileDescriptor sourcePfd = openPfd(uri);
-                 PdfRenderer renderer = new PdfRenderer(sourcePfd);
-                 PrintedPdfDocument outDoc = new PrintedPdfDocument(MainActivity.this, attrs)) {
-
+                 PdfRenderer renderer = new PdfRenderer(sourcePfd)) {
+                outDoc = new PrintedPdfDocument(MainActivity.this, attrs);
                 int outputIndex = 0;
                 for (int copy=0; copy<copies; copy++) {
                     for (int srcIndex : sourcePages) {
@@ -420,11 +420,17 @@ public class MainActivity extends Activity {
                         outputIndex++;
                     }
                 }
-                try (FileOutputStream out = new FileOutputStream(dest.getFileDescriptor())) { outDoc.writeTo(out); }
+                try (FileOutputStream out = new FileOutputStream(dest.getFileDescriptor())) {
+                    outDoc.writeTo(out);
+                }
                 cb.onWriteFinished(new PageRange[]{PageRange.ALL_PAGES});
             } catch(Exception e) {
                 cb.onWriteFailed(e.getMessage());
                 notifyPrintStatus(operationId, "failed");
+            } finally {
+                if (outDoc != null) {
+                    try { outDoc.close(); } catch(Exception ignored) {}
+                }
             }
         }
 
