@@ -7,8 +7,8 @@ android {
         applicationId = "mx.edu.uanl.papeleriaauto"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "3.0.0-kiosk-qr"
+        versionCode = 4
+        versionName = "4.0.0-kiosk-commercial"
     }
     buildTypes {
         release { isMinifyEnabled = false }
